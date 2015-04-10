@@ -1,0 +1,130 @@
+.toplevel_page_backup-rocks > .wp-menu-image{
+	display: none;
+}
+
+.backup-rocks-logo{
+	width: 100%;
+}
+
+#adminmenu .toplevel_page_backup-rocks > .wp-menu-name{
+	padding:0;
+}
+
+.backup-wrap, .backup-wrap2 {
+    display: inline-block;
+}
+
+.backup-wrap{
+ 	background-color: white;
+    margin-right: 2%;
+    margin-top: 5%;
+    padding: 32px 30px 68px 45px;
+    width: 41%;
+}
+
+.backup-wrap2 {
+    background-color: white;
+    float: right;
+    margin-top: 5%;
+    padding: 14px 30px 69px 45px;
+    position: relative;
+    width: 42%;
+}
+
+.backup-wrap h1 a{
+	color:#fd553c;
+	cursor: pointer;
+	font-weight: 600;
+}
+
+.desc{
+	margin-bottom: 30px!important;
+}
+
+.button-rocks:hover:after {
+    content: ">";
+    position: absolute;
+    right: 5px;
+}
+.backup-wrap h1,.backup-wrap2 > h1 {
+	color: #fd553c;
+	line-height: 1.3em;
+}
+.backup-wrap2 input {
+    border: 1px solid #dfdfdf;
+    height: 50px;
+    padding: 14px;
+    width: 85%;
+}
+
+.button-rocks, input.button-rocks{
+	background: none;
+	text-decoration: none;
+	padding: 10px 16px;
+	border: 2px solid #fd553c;
+	border-radius: 4px;
+	color: #fd553c;
+	cursor: pointer;
+	font-size: 16px;
+	transition:all 0.2s ease 0s;
+	position: relative;
+	/*top:25px;*/
+	width: auto;
+}
+.button-rocks:hover, input.button-rocks:hover{
+	transition:all 0.2s ease 0s;
+	background-color:#fd553c;
+	color: white;
+	padding: 11px 22px 11px 9px;
+}
+
+.backup-wrap2 .button-rocks {
+    top: 35px;
+}
+
+.backup-wrap2 .desc {
+    margin-bottom: 15px !important;
+}
+
+.top_navigation{
+	background-color:#fd553c;
+	margin-top: 2%;
+}
+
+.top_navigation::after {
+    clear: both;
+    content: " ";
+    display: table;
+}
+
+.top_navigation > a {
+    float: left;
+    max-width: 300px;
+    min-width: 300px;
+    vertical-align: top;
+}
+
+.top_navigation img {
+    display: block;
+    width: 100%;
+}
+
+#top-menu-nav {
+    float: right;
+}
+
+#top-menu .menu-item {
+    display: inline-block;
+}
+
+#top-menu .menu-item a {
+    color: #ffffff;
+    font-size: 16px;
+    line-height: 46px;
+    padding: 12px;
+    text-decoration: none;
+}
+
+.info_licisance_key h2 {
+	font-size: 15px;
+}
