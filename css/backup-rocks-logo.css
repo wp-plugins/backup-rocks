@@ -106,7 +106,8 @@
 
 .top_navigation img {
     display: block;
-    width: 100%;
+    height: 75px;
+    width: 300px;
 }
 
 #top-menu-nav {

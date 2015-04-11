@@ -256,29 +256,29 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 				<nav id="top-menu-nav">
 					<ul class="nav" id="top-menu">
 						<li class="menu-item" id="">
-							<a href="https://backup.rocks/#features">FEATURES</a>
+							<a href="https://backup.rocks/#features" target="_blank">FEATURES</a>
 						</li>
 
 						<li class="menu-item " id="">
-							<a href="https://backup.rocks/#how-it-works">HOW IT WORKS</a>
+							<a href="https://backup.rocks/#how-it-works" target="_blank">HOW IT WORKS</a>
 						</li>
 
 						<li class="menu-item " id="">
-							<a href="https://backup.rocks/#join_plan">PLAN</a>
+							<a href="https://backup.rocks/#join_plan" target="_blank">PLAN</a>
 						</li>
 
 						<li class="menu-item " id="">
-							<a href="https://backup.rocks/#contact_us">CONTACT US</a>
+							<a href="https://backup.rocks/#contact_us" target="_blank">CONTACT US</a>
 						</li>
 
 						<li class="menu-item " 
 							id="">
-							<a href="https://backup.rocks">LOGIN</a>
+							<a href="https://backup.rocks" target="_blank">LOGIN</a>
 						</li>
 
 						<li class="menu-item" 
 							id="">
-							<a href="https://backup.rocks/sign-up/">SIGN UP</a>
+							<a href="https://backup.rocks/sign-up/" target="_blank">SIGN UP</a>
 						</li>
 					</ul> 
 				</nav>

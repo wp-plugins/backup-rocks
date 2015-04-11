@@ -1,6 +1,6 @@
 <?php
-define( 'license',                            trim( get_option( 'backup_rocks_license_key' ) ) );
-define( 'server_path',                        trim( get_option( 'br_server_id' ) ).'/wp-admin/admin-ajax.php' );
+define( 'license', trim( get_option( 'backup_rocks_license_key' ) ) );
+define( 'server_path', trim( get_option( 'br_server_id' ) ).'/wp-admin/admin-ajax.php' );
 
 /* CAPTURING EVENTS FOR WP_POST TABLE */
 add_action( 'edit_post',                      'action_post_handler', 10, 2 );
