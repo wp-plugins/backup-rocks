@@ -8,8 +8,8 @@ Stable tag: 1.1
 License: GPLv2 
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-
-backup.rocks is a unique and reliable automatic real time backup service for your WordPress site. backup.rocks provides both free and paid subscriptions.
+backup.rocks is a unique & reliable automatic real time backup service for your WordPress site.
+backup.rocks provides both free & paid subscriptions.
 
 == Description ==
 backup.rocks takes automatic real time backup of your wordpress site with easy restore option and option to migrate to a new host.
