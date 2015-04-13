@@ -1,9 +1,9 @@
 <?php
 /*
 Plugin Name: Backup Rocks
-Description: Real Time WordPress BackUp.
-Author: teammife
-Version: 1.0
+Description: An all new unique, reliable and a real-time backup tool for your websites, which can backup changes on your websites occurring even million times in a second! Call it as creating a clone-website of your real one, so that you never miss out any data ever!
+Author: TeamMiFe
+Version: 1.1
 Author URI: http://backup.rocks
 */
 define( 'BACKUP_ROCKS_URL', 'http://backup.rocks/bradmin/wp-admin/admin-ajax.php' ); 
@@ -150,7 +150,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		add_action( 'wp_ajax_nopriv_wpbr_br_in_api', array( $this,'br_in_api'));
 		add_action( 'wp_ajax_nopriv_wpbr_br_api__fl', array( $this,'br_api__fl') );
 
-		register_deactivation_hook( __FILE__, array( $this, 'backup_rocks_deactivate') );
+		// register_deactivation_hook( __FILE__, array( $this, 'backup_rocks_deactivate') );
 
 		$absolute_path = rtrim( ABSPATH, '\\/' );
 		$site_url = rtrim( site_url( '', 'http' ), '\\/' );
@@ -227,22 +227,22 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		$license 	= get_option( 'backup_rocks_license_key' );
 		$status 	= get_option( 'backup_rocks_license_status' );		
  		$activate	= '';
-		if( $status !== false && $status == 'valid' ){
+ 		$message 	= '';
+		if( $status !== false && $status == 'valid' ) {
 			$activate 	= '<p><span style="color: orange; font-size: 18px;">License has been actived!</span></p>';
-		}else {
+		} else {
 			$activate = '<input type="submit" class="button-rocks " name="backup_rocks_license_activate" value="Activate License" >';
-			if( $status == 'invalid') {
-				?>
-				<div class="updated">
-			        <p><?php _e( 'Submited KEY is wrong, Please check KEY again!', 'backup_rocks' ); ?></p>
-			    </div>			
-				<?php
-			} elseif($license) {
-				?>
-				<div class="updated">
-			        <p><?php _e( 'Click on activate to Activate your License!', 'backup_rocks' ); ?></p>
-			    </div>			
-				<?php
+			if( $status == 'invalid') { 
+				$message = '
+					<div class="updated wrong">
+				        <p>The key you have entered is wrong, please check the key and submit it again!</p>
+				    </div>';		
+				
+			} elseif($license) { 
+				$message = '
+					<div class="updated">
+			        	<p>Click on activate to Activate your License!</p>
+			    	</div>';				
 			}
 				
 		}
@@ -285,8 +285,8 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 
 			</div>
 			<div class="backup-wrap">
-				<h1>The Backup Rocks plugin <strong><a>requires a valid subscription.</a></strong></h1>
-				<div class="desc">Get real time automated backups and support from WordPress Experts.</div>
+				<h1>The backup.rocks plugin requires a valid subscription.</h1>
+				<div class="desc">The backup.rocks plugin enables you to take real-time backup of your websites, accounting changes occuring in fractions of seconds! Explore the backup.rocks plugin to stay secured forever!</div>
 				<a target="blank" href="https://backup.rocks/#join_now_id_pricing_table" class="button-rocks">View plans and pricing</a>
 			</div>
 
@@ -294,13 +294,13 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 				<h1>Enter your Registration key below.</h1>
 				<form method="post" action="options.php">
 					<?php settings_fields('backup_rocks_license'); ?>
-					<div class="desc">Make sure you click on activate license button after entering your registration key.</div>
 					<input id="backup_rocks_license_key" type="textarea" name="backup_rocks_license_key" value="<?php esc_attr_e( $license ); ?>" placeholder="Enter your key here"/>
 					<?php echo wp_nonce_field( 'backup_rocks_nonce', 'backup_rocks_nonce' ); ?>
 					<?php if( $license == '' ) { ?> 
 					<p class="submit"><input type="submit" value="Save Changes" class="button-rocks" id="submit" name="submit"></p>
 					<?php } else { echo $activate; } ?>
-				</form>		
+				</form>	
+				<?php echo $message; ?>
 			</div>				
 		<?php
 	}
@@ -1066,7 +1066,7 @@ class server {
 			$credentials["wp-config.php"] = sha1_file(ABSPATH."wp-config.php");
 		}
 		if(file_exists(ABSPATH."robots.txt")) {
-			$credentials["robot.txt"] = sha1_file(ABSPATH."robot.txt");
+			$credentials["robot.txt"] = sha1_file(ABSPATH."robots.txt");
 		}
 		$credential = base64_encode(serialize($credentials));
 		$return['credential'] = $credential;

@@ -79,11 +79,19 @@
 }
 
 .backup-wrap2 .button-rocks {
-    top: 35px;
+    margin-top: 35px;
 }
 
 .backup-wrap2 .desc {
     margin-bottom: 15px !important;
+}
+
+.backup-wrap2 .updated {
+    margin-top: 12px !important;
+}
+
+.backup-wrap2 .updated.wrong {
+    border-color: #ff0000;
 }
 
 .top_navigation{
