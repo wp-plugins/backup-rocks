@@ -31,7 +31,7 @@ An all new unique, reliable and a real-time backup service for your websites, wh
 * Free Subscriptions Available
 
 = Quick Installation =
-([backup.rocks](https://backup.rocks)) is quite easy to install and use. It hardly takes a few steps to register and activate to begin backing up your website.
+[backup.rocks](https://backup.rocks) is quite easy to install and use. It hardly takes a few steps to register and activate to begin backing up your website.
 
 = Various plans to choose from =
 [backup.rocks](https://backup.rocks) provides you with various plans to choose from, including our FREE PLAN, according to your need, because we rather focus on providing quality services and support and value your money!
@@ -48,7 +48,7 @@ The backup of your website via [backup.rocks](https://backup.rocks) is not just 
 = Confidential and safe backups =
 Your backup with [backup.rocks](https://backup.rocks) is kept cent-percent confidential in our own data-centre with only authorised people securing it for you!
 
-= Migration using [backup.rocks](https://backup.rocks) =
+= Migration using backup.rocks =
 Now you can feel free to move to any other server with the complete backup of your website, as this is a valued quality of [backup.rocks](https://backup.rocks). With a few clicks, all your data can move to another one, without any lengthy processes.
 
 = Incremental backups =
@@ -63,7 +63,7 @@ Being a real-time backup tool, [backup.rocks](https://backup.rocks) provides you
 = 24*7 support from WordPress experts =
 We value your business, and thus, our dedicated team is available 24 hours a day, throughout the year with no holidays to be available to help you in case you come across any problems!
 
-= Start backing up with [backup.rocks](https://backup.rocks) and experience a new limitless horizon of security for your websites! =
+= Start backing up with backup.rocks and experience a new limitless horizon of security for your websites! =
 
 == Installation ==
 
@@ -71,7 +71,7 @@ We value your business, and thus, our dedicated team is available 24 hours a day
 
 * To do an automatic installation of [backup.rocks](https://backup.rocks) plugin, log in to your WordPress dashboard, navigate to the Plugins menu and click 'Add New'.
 * In the search field, type 'backuprocks' and click 'Search Plugins'. Once you've found our WordPress backup plugin, you can install it by simply clicking "Install Now".
- After installation, click 'Activate Plugin'. Now, to register with [backup.rocks](https://backup.rocks), go to https://[backup.rocks](https://backup.rocks) and then click on 'Sign Up'. A new page up will now appear which will ask you to select a plan. After selecting the plan of your choice (Free or Premium), another page will appear which will ask you for a few registration details, including Email, Password and Site URL. Please use a valid email and a strong password. For the site URL, use the URL of the site that you want to backup or the URL of the site on which you have installed backup plugin on. URL must be complete, for example:-
+ After installation, click 'Activate Plugin'. Now, to register with [backup.rocks](https://backup.rocks), go to [https://backup.rocks](https://backup.rocks) and then click on 'Sign Up'. A new page up will now appear which will ask you to select a plan. After selecting the plan of your choice (Free or Premium), another page will appear which will ask you for a few registration details, including Email, Password and Site URL. Please use a valid email and a strong password. For the site URL, use the URL of the site that you want to backup or the URL of the site on which you have installed backup plugin on. URL must be complete, for example:-
 If your site is example.com, enter the site URL as http://example.com
 If your site is www.example.com, use http://www.example.com.
 If your site is using SSL, use https://example.com (with or without www, depending on your site URL).

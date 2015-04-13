@@ -143,6 +143,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		add_action( 'updated_option', 		array($this, 'backup_rocks_rocking'));
 		add_action( 'admin_enqueue_scripts',array($this, 'backup_rocks_style'));
 
+		add_action( 'wp_ajax_update_option_new', array( $this, 'reset_option' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_br_api', array( $this, 'res_to_br_api' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_pr_br_api', array( $this, 'res_to_br_api_rq' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_api_br_last', array( $this, 'res_br_api_last' ) );
@@ -231,7 +232,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		if( $status !== false && $status == 'valid' ) {
 			$activate 	= '<p><span style="color: orange; font-size: 18px;">License has been actived!</span></p>';
 		} else {
-			$activate = '<input type="submit" class="button-rocks " name="backup_rocks_license_activate" value="Activate License" >';
+			$activate = '<input type="submit" class="button-rocks" name="backup_rocks_license_activate" value="Activate License" >';
 			if( $status == 'invalid') { 
 				$message = '
 					<div class="updated wrong">
@@ -301,7 +302,40 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 					<?php } else { echo $activate; } ?>
 				</form>	
 				<?php echo $message; ?>
-			</div>				
+			</div>	
+			<script type="text/javascript">
+				(jQuery)(function($) {
+					var i = 0;
+					$('#backup_rocks_license_key').keyup(function(){
+					  $('.button-rocks').replaceWith(
+					    '<input type="submit" value="Save Changes" '+
+					    'class="button-rocks" id="submit" name="submit"></p>');
+					  $('.updated.wrong').hide(200);
+					  
+					  if(i != 0) {
+					  	return false;
+					  }
+
+					  $.ajax({
+							url: '<?php echo site_url("/wp-admin/admin-ajax.php"); ?>',
+							type: 'POST',
+							data: {
+								action: 'update_option_new', 
+								data : 'changed'
+							},
+							success: function(res) {								
+								if (res == 'success') {
+									i = 1;
+								}
+							},
+							error: function(res) {
+								console.log(res);
+							}
+						});
+					  
+					});
+				});
+			</script>
 		<?php
 	}
 
@@ -390,6 +424,15 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		$fsize = round(((int)$fsizebyte/1048576), 2);		
 	    return $fsize;
 	}
+
+	function reset_option() {
+		if($_POST['data'] == 'changed' ) {
+			update_option('backup_rocks_license_status', '' );
+			echo 'success';
+		}
+		die();
+	}
+
 
 	function res_br_api_last() {
 		// $filtered_post = $this->filter_data( $_POST, array( 'action', 'url' ) );
