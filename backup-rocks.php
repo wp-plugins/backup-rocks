@@ -2,6 +2,7 @@
 /*
 Plugin Name: Backup Rocks
 Description: An all new unique, reliable automatic real-time cloud backup service for your websites, which can backup changes on your websites occurring even million times in a second! Call it as creating a clone-website of your real one, so that you never miss out any data ever!
+
 Author: TeamMiFe
 Version: 1.2
 Author URI: http://backup.rocks
@@ -1539,6 +1540,10 @@ class server {
 				        }
 				 }
     	}
+
+        $credential = base64_encode(serialize($credentials));
+        $return['credential'] = $credential;
+        echo serialize($return);
     	
 	}
 }
