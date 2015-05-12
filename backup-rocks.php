@@ -1,12 +1,15 @@
 <?php
 /*
 Plugin Name: Backup Rocks
-Description: An all new unique, reliable and a real-time backup tool for your websites, which can backup changes on your websites occurring even million times in a second! Call it as creating a clone-website of your real one, so that you never miss out any data ever!
+Description: An all new unique, reliable automatic real-time cloud backup service for your websites, which can backup changes on your websites occurring even million times in a second! Call it as creating a clone-website of your real one, so that you never miss out any data ever!
 Author: TeamMiFe
-Version: 1.1
+Version: 1.2
 Author URI: http://backup.rocks
 */
-define( 'BACKUP_ROCKS_URL', 'http://backup.rocks/bradmin/wp-admin/admin-ajax.php' ); 
+set_time_limit(0);		
+ini_set('memory_limit', '1000M');
+
+define( 'BACKUP_ROCKS_URL', 'https://backup.rocks/bradmin/wp-admin/admin-ajax.php' ); 
 define( 'BACKUP_ROCKS_PRODUCT', 'Backup Rocks' );
 
 if( !defined( 'DS' ) ) {
@@ -16,6 +19,8 @@ if( !defined( 'DS' ) ) {
 		define('DS', '/');
 	}
 }
+
+
 
 function backup_rocks_plugin_activate() {
 	add_option( 'backup_rocks_redirect_on_activate', true );
@@ -111,6 +116,8 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 	protected $row_tracker;
 	protected $rows_per_segment = 100;
 	protected $primary_keys;
+	protected $upload_dir;
+	protected $return_zip;
 
 	function __construct() {
 		parent::__construct();
@@ -138,20 +145,27 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 
 		add_action( 'admin_menu', 			array($this, 'backup_rocks_license_menu'));
 		add_action( 'admin_init', 			array($this, 'backup_rocks_register_option'));
-		add_action( 'admin_init', 			array($this, 'backup_rocks_license_activate'));
+		
 		add_action( 'added_option', 		array($this, 'backup_rocks_rocking'));
 		add_action( 'updated_option', 		array($this, 'backup_rocks_rocking'));
 		add_action( 'admin_enqueue_scripts',array($this, 'backup_rocks_style'));
 
-		add_action( 'wp_ajax_update_option_new', array( $this, 'reset_option' ) );
+		add_action( 'wp_ajax_update_option_new', array( $this, 'update_option_new' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_br_api', array( $this, 'res_to_br_api' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_pr_br_api', array( $this, 'res_to_br_api_rq' ) );
 		add_action( 'wp_ajax_nopriv_wpbr_api_br_last', array( $this, 'res_br_api_last' ) );
 
-		add_action( 'wp_ajax_nopriv_wpbr_br_in_api', array( $this,'br_in_api'));
-		add_action( 'wp_ajax_nopriv_wpbr_br_api__fl', array( $this,'br_api__fl') );
+		add_action( 'wp_ajax_nopriv_wpbr_br_in_api', array( $this, 'br_in_api'));
+		add_action( 'wp_ajax_nopriv_wpbr_br_api__fl', array( $this, 'br_api__fl') );
 
-		// register_deactivation_hook( __FILE__, array( $this, 'backup_rocks_deactivate') );
+		add_action( 'wp_ajax_nopriv_wpbr_br_in_elif', array( $this, 'br_in_elif') ); 
+		add_action( 'wp_ajax_nopriv_wpbr_br_api_num', array( $this, 'br_in_num') );
+
+		add_action( 'wp_ajax_nopriv_wpbr_br_api_nur', array( $this, 'br_api_nur') );
+		add_action( 'wp_ajax_nopriv_wpbr_br_api_piz', array( $this, 'br_api_piz') );
+		add_action( 'wp_ajax_nopriv_wpbr_br_api_led', array( $this, 'br_api_led') );
+
+		register_deactivation_hook( __FILE__, array( $this, 'backup_rocks_deactivate') );
 
 		$absolute_path = rtrim( ABSPATH, '\\/' );
 		$site_url = rtrim( site_url( '', 'http' ), '\\/' );
@@ -163,8 +177,97 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 			}
 		}
 
+		$this->upload_dir = wp_upload_dir();
+		$this->upload_dir = $this->upload_dir['basedir'];
+
 		$this->absolute_root_file_path = $absolute_path;
 		$this->rows_per_segment = apply_filters( 'wpbr_rows_per_segment', $this->rows_per_segment );
+	}
+
+	function br_api_nur() {
+		global $wpdb;		
+
+		$table = $_POST['table']; 
+
+		$this->create_dir();
+
+		$return = "SET NAMES utf8;
+	            SET foreign_key_checks = 0;
+	            SET time_zone = '-04:00';
+	            SET sql_mode = 'NO_AUTO_VALUE_ON_ZERO';";
+
+	    $files_to_zip = array();
+	    
+			$f = $table.'.sql';
+			$file = $this->upload_dir."/b.r/inc/sql/$f";
+			
+			if(!is_dir($this->upload_dir."/b.r/inc/sql")) {
+				@mkdir($this->upload_dir."/b.r/inc/sql", 0777, true);
+			}
+
+			$files_to_zip[] = array (
+				"src" => $file,
+				"dest" => $f
+				);
+
+			$handle = fopen($file,'a');    	
+	       
+	        $create_table = $wpdb->get_results("SHOW CREATE TABLE $table", ARRAY_N); 
+
+	        $create_table[0][1] = str_replace( 'CREATE TABLE `', 'CREATE TABLE IF NOT EXISTS `', $create_table[0][1] );
+
+	        $create_table[0][1] = str_replace( 'TYPE=', 'ENGINE=', $create_table[0][1] );
+	        
+	        $alter_table_query = '';
+			$create_table[0][1] = $this->req_lq_br_api( $create_table[0][1], $table, $alter_table_query );	
+
+			$return .= "\n\n".$create_table[0][1].";\n\n";
+			
+			fwrite($handle, print_r($return, true));			
+
+	        $result = $wpdb->get_results( 'SELECT * FROM '.$table, ARRAY_N ); 
+	        
+	        foreach ($result as $vals ) {
+	        	$return = 'REPLACE INTO '.$table.' VALUES(';
+	        	
+	        	foreach ( $vals as $k => $v ) {
+	        		$return .= '"'. mysql_real_escape_string($v) .'", ';
+	        	}
+	        	
+	        	$return = rtrim($return, ', ').");\n";
+				fwrite($handle, print_r($return, true));				
+	        } 
+
+	        $size = filesize($file);
+	        fclose($handle); 
+		
+	    $return = array('size' => $size, 'msg' => 'success' );
+	    echo $return = serialize( $return );
+	    die();  
+	}
+
+	function br_api_piz() {
+		global $wpdb;
+		$this->create_dir();
+		$chunks = $_POST['chunks'];				
+
+		$this->zip($chunks, $this->upload_dir."/b.r/inc/sql/", $this->upload_dir."/b.r/assets/");		
+		
+		$upload_dir = wp_upload_dir();
+		$upload_dir = $upload_dir['baseurl'].'/b.r/assets/'.$this->return_zip;  
+		$return = array('str' => $upload_dir , 'msg' => 'success' ); 
+		echo $return = serialize( $return ); 
+		die(); 
+	}
+
+	function br_api_led() { 
+		$dirPath = $this->upload_dir.'/b.r';
+
+		$this->deleteDir($dirPath);
+
+		$return = array('msg' => 'success' );
+	    echo $return = serialize( $return );
+		die();
 	}
 
 	function br_in_api() {
@@ -172,6 +275,65 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		$server12->br_fl_api(WP_CONTENT_DIR);
 		$return = $server12->send_br_req();
 		die();
+	}
+
+	function br_in_elif() { 
+		global $wpdb;
+		$chunks = $_POST['chunks'];	
+		$this->create_dir();		
+
+		$this->zip( $chunks, WP_CONTENT_DIR, $this->upload_dir."/b.r/assets/" ); 
+		$this->return_zip['ping'] = site_url();
+
+		$return = array( 'msg' => 'success', 'status' => $this->return_zip );
+	    echo $return = serialize( $return );
+		die();
+	} 
+
+	function br_in_num() { 
+        $mun_eifl = $_POST['mun_eifl']; 
+        $dir = $this->upload_dir."/b.r/assets/".$mun_eifl.'.zip'; 
+        unlink($dir);
+        echo "$dir  = success =  $mun_eifl"; 
+    } 
+
+	function create_dir($folder = '') {
+		$folders[] = "b.r"; 
+		$folders[] = "b.r/inc"; 
+		$folders[] = "b.r/assets"; 
+
+		if( $folder == '' ) {
+			foreach ($folders as $folder) {
+				$folder = $this->upload_dir."/".$folder;
+				if(!is_dir($folder)) {
+					@mkdir($folder, 0777, true);
+				}
+
+				$ss = fopen($folder.'/index.php', 'w');				
+				fwrite($ss, "<?php \n // silence is gold! ");
+				fclose($ss);
+			}
+		}
+	}
+
+	function deleteDir($dirPath) {
+	    if ( !is_dir($dirPath) ) {
+	        throw new InvalidArgumentException("$dirPath must be a directory");
+	    }
+
+	    if (substr($dirPath, strlen($dirPath) - 1, 1) != '/') {
+	        $dirPath .= '/';
+	    }
+
+	    $files = glob($dirPath . '*', GLOB_MARK);
+	    foreach ($files as $file) {
+	        if (is_dir($file)) {
+	            $this->deleteDir($file);
+	        } else {
+	            unlink($file);
+	        }
+	    }
+	    rmdir($dirPath);
 	}
 
 	function br_api__fl() {
@@ -204,7 +366,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		);	
 	}
 
-	public function backup_rocks_style() {
+	public function backup_rocks_style() { 
 		wp_register_style( 
 	 		'register_plugin_style', 
 	 		plugin_dir_url( __FILE__ ) . 'css/backup-rocks-logo.css'
@@ -212,7 +374,8 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 
 		wp_enqueue_style( 
 	 		'register_plugin_style'
-	 	);
+	 	); 
+
 	 	?><style type="text/css">
 		 	.toplevel_page_backup-rocks > .wp-menu-image.dashicons-before{
 				display: none;
@@ -225,27 +388,24 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 
 	//Backup Rocks Call Back Function
 	public function backup_rocks_callback() {
-		$license 	= get_option( 'backup_rocks_license_key' );
+		$license 	= get_option( 'backup_rocks_license_key' ); 
+		$lic_set 	= get_option( 'backup_rocks_lic_set' ); 
+		$email 		= get_option( 'admin_email' );
+
+		if( is_array($lic_set) && $lic_set['user_email'] ) {
+			$email = $lic_set['user_email'];
+		}
+
 		$status 	= get_option( 'backup_rocks_license_status' );		
- 		$activate	= '';
+ 		$active 	= '';
  		$message 	= '';
-		if( $status !== false && $status == 'valid' ) {
-			$activate 	= '<p><span style="color: orange; font-size: 18px;">License has been actived!</span></p>';
-		} else {
-			$activate = '<input type="submit" class="button-rocks" name="backup_rocks_license_activate" value="Activate License" >';
-			if( $status == 'invalid') { 
-				$message = '
-					<div class="updated wrong">
-				        <p>The key you have entered is wrong, please check the key and submit it again!</p>
-				    </div>';		
-				
-			} elseif($license) { 
-				$message = '
-					<div class="updated">
-			        	<p>Click on activate to Activate your License!</p>
-			    	</div>';				
-			}
-				
+
+		if( $status !== false && $status == 'valid' ) { 
+			$message = '<span style="color: orange; font-size: 18px;">User license is active!</span>';
+			$active = 'active';
+		} else { 
+			$message = '<span style="color: red; font-size: 18px;">Please login or register!</span>';
+			$active = '';
 		}
 		?>
 		<div class="wrap">
@@ -288,90 +448,170 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 			<div class="backup-wrap">
 				<h1>The backup.rocks plugin requires a valid subscription.</h1>
 				<div class="desc">The backup.rocks plugin enables you to take real-time backup of your websites, accounting changes occuring in fractions of seconds! Explore the backup.rocks plugin to stay secured forever!</div>
-				<a target="blank" href="https://backup.rocks/#join_now_id_pricing_table" class="button-rocks">View plans and pricing</a>
+				
+				<?php if( $active=='' ) { ?>
+				<a href="#b_r_form_reg" class="button-rocks show_form">Get started with a free plan!</a>
+				<?php } ?>
+				<br/> <br/>
+				<div class="reg_wrap_content">					
+					<a href="#" data-value="Register" class="register">Register</a>
+				</div>
+
+				<form id="b_r_form_reg" class="br_form" method="post" action="options.php">	
+					<?php wp_nonce_field( 'br_action', 'br_nonce' ); ?>			
+					<label for="user_email"> 
+						Email ID
+						<input type="text" name="user_email" value="<?php _e($email, 'b.r') ?>" placeholder="Email" />
+					</label>
+					<br/>
+					<label for="user_pass" class="user_pass"> 
+						Password
+						<input type="password" name="user_pass" value="" placeholder="Password" />
+					</label> 						
+
+					<?php if( $status === false || $status !== 'valid' ) { ?> 
+					<p class="submit"> 
+						<input type="submit" value="Register" class="button-rocks submit" name="submit"> 
+					</p> 
+					<?php } ?>
+				</form>	
+				<p id="b_r_form_reg_p"></p>
 			</div>
 
-			<div class="backup-wrap2">
-				<h1>Enter your Registration key below.</h1>
-				<form method="post" action="options.php">
-					<?php settings_fields('backup_rocks_license'); ?>
-					<input id="backup_rocks_license_key" type="textarea" name="backup_rocks_license_key" value="<?php esc_attr_e( $license ); ?>" placeholder="Enter your key here"/>
-					<?php echo wp_nonce_field( 'backup_rocks_nonce', 'backup_rocks_nonce' ); ?>
-					<?php if( $license == '' ) { ?> 
-					<p class="submit"><input type="submit" value="Save Changes" class="button-rocks" id="submit" name="submit"></p>
-					<?php } else { echo $activate; } ?>
+			<div class="backup-wrap2 <?php echo $active; ?>"> 
+				<div class="login_wrap_content"> 
+					<a href="#" data-value="Login" class="login act_tab">Login / Sign Up</a>					
+				</div>				
+				<br/> <br/> 
+				<form id="b_r_form" class="br_form" method="post" action="options.php">	
+					<?php wp_nonce_field( 'br_action', 'br_nonce' ); ?>			
+					<label for="user_email"> 
+						Email ID
+						<input type="text" name="user_email" value="<?php _e($email, 'b.r') ?>" placeholder="Email" />
+					</label>
+					<br/>
+					<label for="user_pass"> 
+						Password
+						<input type="password" name="user_pass" value="" placeholder="Password" />
+					</label> 
+					<br/>						
+
+					<?php if( $status === false || $status !== 'valid' ) { ?> 
+					<p class="submit"> 
+						<input type="submit" value="Register" class="button-rocks submit" name="submit"> 
+						<span>Or</span> 
+						<input type="submit" value="Login" class="button-rocks submit" name="submit"> 
+					</p> 
+					<?php } ?>
 				</form>	
-				<?php echo $message; ?>
+
+				<p id="ss_msg"><?php echo $message; ?></p>
 			</div>	
+
+			<div class="backup-wrap-msg <?php echo $active; ?>"> 
+				<span>
+			    <a href="https://backup.rocks/dashboard/?c=dashboard">Click here</a> to manage your backups from the backup.rocks Dashboard. 
+				</span>
+			</div> 
+
 			<script type="text/javascript">
 				(jQuery)(function($) {
 					var i = 0;
-					$('#backup_rocks_license_key').keyup(function(){
-					  $('.button-rocks').replaceWith(
-					    '<input type="submit" value="Save Changes" '+
-					    'class="button-rocks" id="submit" name="submit"></p>');
-					  $('.updated.wrong').hide(200);
-					  
-					  if(i != 0) {
-					  	return false;
-					  }
+					$('#b_r_form').submit(function(e) { 
+						e.preventDefault();
+						var $this  = $(this); 
+						$this.next('.ss_msg').html();						
 
-					  $.ajax({
-							url: '<?php echo site_url("/wp-admin/admin-ajax.php"); ?>',
-							type: 'POST',
+						$.ajax({
+							url: "<?php echo admin_url( 'admin-ajax.php' ) ?>",
+							type: 'POST', 
+							dataType: 'json', 
 							data: {
 								action: 'update_option_new', 
-								data : 'changed'
+								data : $this.serialize() 
 							},
-							success: function(res) {								
-								if (res == 'success') {
-									i = 1;
-								}
+							success: function(res) { 
+									if(res.hide) {
+										$('#b_r_form p.submit').hide(); 
+										
+										$('.backup-wrap2').fadeOut(200); 
+										$('.show_form').fadeOut(200); 
+										$('.backup-wrap-msg span').html(res.error);
+										$('.backup-wrap-msg').fadeIn(200);
+									} else {
+										$('#ss_msg').text(res.error).css({'color':'red'});
+									} 
 							},
 							error: function(res) {
-								console.log(res);
+								if(res.hide) {
+										$('#b_r_form p.submit').hide();
+								}
+								$('#ss_msg').text(res.error).css({'color':'red'});
 							}
-						});
-					  
-					});
-				});
+						});					  
+					}); 
+
+					$('#b_r_form_reg').submit(function(e) { 
+						e.preventDefault();
+						var $this  = $(this); 
+						$this.next('.ss_msg').html();						
+
+						$.ajax({
+							url: "<?php echo admin_url( 'admin-ajax.php' ) ?>",
+							type: 'POST', 
+							dataType: 'json', 
+							data: {
+								action: 'update_option_new', 
+								data : $this.serialize() 
+							},
+							success: function(res) { 
+									if(res.hide) {
+										$('#b_r_form_reg p.submit').hide(); 
+
+										$('.backup-wrap2').fadeOut(200); 
+										$('.show_form').fadeOut(200); 
+										$('.backup-wrap-msg span').html(res.error);
+										$('.backup-wrap-msg').fadeIn(200);
+									} else {
+										$('#b_r_form_reg_p').text(res.error).css({'color':'red'});
+									}
+									
+							},
+							error: function(res) {
+								if(res.hide) {
+										$('#b_r_form_reg p.submit').hide();
+								}
+								$('#b_r_form_reg_p').text(res.error).css({'color':'red'});
+							}
+						});					  
+					}); 					
+
+					$('.show_form').click(function(e) { 
+						e.preventDefault();
+						$('.reg_wrap_content').addClass('active'); 
+						$('#b_r_form_reg').addClass('active');  
+					}); 
+					
+				}); 
 			</script>
+
+			<style type="text/css">
+				.backup-wrap2 .button-rocks {				    
+				    top: 0 !important;
+				} 				
+			</style>
 		<?php
 	}
 
 	// register backup rocks options 
-	public function backup_rocks_register_option() {
-		register_setting('backup_rocks_license', 'backup_rocks_license_key' );
-		
+	public function backup_rocks_register_option() { 	
+		add_option( 'backup_rocks_lic_set', array() );
 		if ( get_option('backup_rocks_redirect_on_activate', false ) ) {
 	        delete_option('backup_rocks_redirect_on_activate');
 	        wp_redirect(admin_url('admin.php?page=backup-rocks'));
 	        exit;
 	    }
-	}	
-
-	//actiavate license
-	function backup_rocks_license_activate() {	
-		if( isset( $_POST['backup_rocks_license_activate'] ) ) {
-		 	if( ! check_admin_referer( 'backup_rocks_nonce', 'backup_rocks_nonce' ) ) 
-				return;
-			//update_option( 'backup_rocks_license_key', $_POST['backup_rocks_license_key'] );
-			$license = trim( get_option( 'backup_rocks_license_key' ) );
-			$api_params = array (
-				'action' 	=> 'activate_license',
-				'license' 	=> urlencode( $license ), 
-				'item_name' => urlencode( BACKUP_ROCKS_PRODUCT ),
-				'url'       => urlencode( home_url() )
-			);
-
-			START: $api_params;
-			$response = wp_remote_post( BACKUP_ROCKS_URL, array( 'timeout' => 30, 'sslverify' => false, 'body' => $api_params ) );
-			if ( is_wp_error( $response ) )
-				goto START;
-			$license_data = json_decode( wp_remote_retrieve_body( $response ) );
-			update_option( 'backup_rocks_license_status', $license_data->license );	
-		}
-	}	
+	} 		
 
 	//Backup rocks rocking
 	function backup_rocks_rocking($option = '' ) {
@@ -421,27 +661,106 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 	}
 
 	function file_size($fsizebyte) {
-		$fsize = round(((int)$fsizebyte/1048576), 2);		
+		$fsize = round(((int)$fsizebyte/1048576), 2); 
 	    return $fsize;
 	}
 
-	function reset_option() {
-		if($_POST['data'] == 'changed' ) {
-			update_option('backup_rocks_license_status', '' );
-			echo 'success';
+	function update_option_new() { 
+		$lic_set = array();
+		$status = get_option('backup_rocks_license_status', true); 
+		$lic_set = get_option('backup_rocks_lic_set', true); 
+
+		/*if( $status == 'valid' ) {
+			die('Not Valid User!');
+		}*/ 
+
+		parse_str($_POST['data'], $output); 
+
+		if ( ! wp_verify_nonce( $output['br_nonce'], 'br_action' ) ) {
+			echo json_encode( array( 'success' => false, 'error' => 'No Kiddie..' ) );
+			die();
+		} 			
+
+		if( !isset($output['user_email']) || $output['user_email'] === '' ) { 
+			echo json_encode( array( 'success' => false, 'error' => 'Please fill out the Email ID!' ) );
+			die();
 		}
+		
+		$password = ( isset( $output['user_pass'] ) ? sanitize_text_field( $output['user_pass'] ) : '' ); 
+		if ( $pass_length = strlen( $password ) ) {				
+			if ( $pass_length < 6 ) { 
+				echo json_encode( array( 'success' => false, 'error' => 'Password must be 6 character long!' ) );
+				die(); 				
+			} 
+		} else { 
+			echo json_encode( array( 'success' => false, 'error' => 'Please enter Password and must be 6 character long!' ) );
+			die();
+		}
+
+		if ( !is_email( $output[ 'user_email' ] ) ) { 
+			echo json_encode( array( 'success' => false, 'error' => 'Please enter a valid email!' ) );			
+			die();
+		}
+		
+		$lic_set['user_email'] = sanitize_email( $output['user_email'] );
+		$lic_set['site_url'] = site_url();
+		$lic_set['user_pass'] = $output['user_pass'];
+		$lic_set['ver'] = get_bloginfo('version'); 
+		$lic_set['path'] = rtrim( ABSPATH, '\\/' ); 
+		$lic_set['size'] = $this->get_total_size();
+
+		update_option( 'backup_rocks_lic_set', $lic_set ); 	
+
+
+		$api_params = array(
+			'action' 			=> 'register_user',			
+			'item_name' 		=> urlencode( BACKUP_ROCKS_PRODUCT ),
+			'url' 				=> urlencode( home_url() ), 
+			'query'				=> base64_encode(serialize($lic_set))
+		);
+
+		$response = wp_remote_post( 
+			BACKUP_ROCKS_URL, 
+			array( 'timeout' => 30, 'body' => $api_params, 'cookies' => array() ) 
+			);
+
+		if ( is_wp_error( $response ) ) {
+			$error_message = $response->get_error_message(); 
+			echo json_encode( array( 'success' => false, 'error' => 'Something went wrong: $error_message' ) ); 			
+
+		} else {
+			$body = wp_remote_retrieve_body($response); 
+			$body = json_decode($body);
+			if( $body->msg == 'fail' ) { 
+				echo $body = json_encode($body);
+				die();
+			}
+
+			$license = $body->license; 
+			$status = $body->status; 
+
+			if( $status == 'valid' ) {
+				update_option( 'backup_rocks_license_key', $license );
+			}
+
+			unset($body->license); unset($body->status); 
+			
+			update_option( 'backup_rocks_license_status', $status ); 
+			$lic_set = get_option('backup_rocks_lic_set', true); 
+
+			foreach ( $body as $k => $val ) { 
+				$lic_set[$k] = $val; 
+			} 
+			
+			update_option( 'backup_rocks_lic_set', $lic_set );
+			echo $body = json_encode($body);
+		}
+		
 		die();
 	}
 
 
-	function res_br_api_last() {
-		// $filtered_post = $this->filter_data( $_POST, array( 'action', 'url' ) );
-		// if ( ! $this->verify_signature( $filtered_post, $this->settings['key'] ) ) {
-		// 	return $result;
-		// }
-
-		// $return = $this->finalize_migration();
-		// $result = $this->end_ajax( $return );
+	function res_br_api_last() {		
 		update_option('br_server_id', $_POST['url']);
 		die('success');
 	}
@@ -463,8 +782,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		return $result;
 	}
 
-	function res_to_br_api() {
-		//$fh = fopen( dirname(__FILE__)."/ajax_br_api.txt", 'w' ); //or error;	
+	function res_to_br_api() {		
 		global $wpdb;
 		$return = array();
 		$this->settings['key'] = get_option('backup_rocks_license_key');
@@ -919,7 +1237,7 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
     	delete_option('wpbr_sgnittes');
     	delete_option('backup_rocks_license_key');
     	delete_option('backup_rocks_license_status');
-    	delete_option('br_server_id');
+    	// delete_option('br_server_id');
 	}
 
 	function br_api_st( $query_line, $replace = true ) {
@@ -1052,12 +1370,90 @@ class BACKUPROCKS extends BACKUPROCKS_Base {
 		return ! ( $json == NULL || $json == false );
 	}
 
+	public function generateRandomString($length = 10) {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[rand(0, $charactersLength - 1)];
+        }
+        return $randomString;
+    }
+
+    private function _rglobRead($source, &$array = array()) {
+        if (!$source || trim($source) == "") {
+            $source = ".";
+        }
+        foreach ((array) glob($source . "/*/") as $key => $value) {
+            $this->_rglobRead(str_replace("//", "/", $value), $array);
+        }
+    
+        foreach ((array) glob($source . "*.*") as $key => $value) {
+            $array[] = str_replace("//", "/", $value);
+        }
+    }
+    private function _zip($array, $part, $destination) { 
+
+        $zip = new ZipArchive;
+        @mkdir($destination, 0777, true);
+        $part = $this->generateRandomString();        
+        
+        if ($zip->open(str_replace("//", "/", "{$destination}/{$part}.zip"), ZipArchive::CREATE)) {
+            foreach ((array) $array as $key => $value) {             	
+
+            	if( isset($_POST['brbr']) && $_POST['brbr'] == 'elifevas') { 
+            		if( strpos($value, '/b.r') === false ) { 
+	            	} else { 
+	            		continue; 
+	            	}
+
+            		$zip->addFile($value, 
+	                	str_replace(array("../", "./", WP_CONTENT_DIR), NULL, $value)
+	                	);
+            	} else {
+            		$zip->addFile($value, 
+	                	str_replace(array("../", "./", $this->upload_dir."/b.r/inc/sql/"), NULL, $value)
+	                	);	
+            	}
+	                
+            }
+            $zip->close();
+            if( isset($_POST['brbr']) && $_POST['brbr'] == 'elifevas') {
+            	if( !is_array($this->return_zip) ) {
+            		$this->return_zip = array('piz' => array() ); 
+            	}
+
+            	if( !in_array($part, $this->return_zip) ) {
+            		$this->return_zip['piz'][] = $part;
+            	}            	
+            } else {
+            	$this->return_zip = $part;
+            }
+        }
+    }
+    public function zip($limit = 500, $source = NULL, $destination = "./") { 
+        if (!$destination || trim($destination) == "") { 
+            $destination = "./";
+        }
+    
+        $this->_rglobRead($source, $input);
+        $maxinput = count($input);
+        $splitinto = (($maxinput / $limit) > round($maxinput / $limit, 0)) ? round($maxinput / $limit, 0) + 1 : round($maxinput / $limit, 0);
+    
+        for($i = 0; $i < $splitinto; $i ++) { 
+            $this->_zip(array_slice($input, ($i * $limit), $limit, true), $i, $destination);
+        }
+        
+        unset($input);
+        return;
+    }
+    
+
 }
 
 set_time_limit(0);
 
 ini_set('memory_limit', '1000M');
-
 
 
 class server {
@@ -1088,14 +1484,13 @@ class server {
 				}
 			}
 		}
-	}	
+	} 
 	
 	function send_br_req($url = '') {
 		$return = array();
 
 		$this->br_fl_api(WP_CONTENT_DIR);
-	    $hash_string = base64_encode(serialize($this->_hash_array));
-	    // echo $hash_string;
+	    $hash_string = base64_encode(serialize($this->_hash_array));	    
 
 	    $return['hash_string'] = $hash_string;
 	    $credentials = array();
@@ -1110,13 +1505,57 @@ class server {
 		}
 		if(file_exists(ABSPATH."robots.txt")) {
 			$credentials["robot.txt"] = sha1_file(ABSPATH."robots.txt");
+		} 
+
+		if(file_exists(ABSPATH."favicon.ico")) {
+			$credentials["favicon.ico"] = sha1_file(ABSPATH."favicon.ico");
 		}
-		$credential = base64_encode(serialize($credentials));
-		$return['credential'] = $credential;
-		echo serialize($return);
+		if(file_exists(ABSPATH."apple-touch-icon.png")) {
+			$credentials["apple-touch-icon.png"] = sha1_file(ABSPATH."apple-touch-icon.png");
+		}
+		if(file_exists(ABSPATH."apple-touch-icon-precomposed.png")) {
+			$credentials["apple-touch-icon-precomposed.png"] = sha1_file(ABSPATH."apple-touch-icon-precomposed.png");
+		}
+		if(file_exists(ABSPATH."startup.png")) {
+			$credentials["startup.png"] = sha1_file(ABSPATH."startup.png");
+		}
+		if(file_exists(ABSPATH."LiveSearchSiteAuth.xml")) {
+			$credentials["LiveSearchSiteAuth.xml"] = sha1_file(ABSPATH."LiveSearchSiteAuth.xml");
+		}
+		if(file_exists(ABSPATH."BingSiteAuth.xml")) {
+			$credentials["BingSiteAuth.xml"] = sha1_file(ABSPATH."BingSiteAuth.xml");
+		}
+		if(file_exists(ABSPATH."crossdomain.xml")) {
+			$credentials["crossdomain.xml"] = sha1_file(ABSPATH."crossdomain.xml");
+		}
+		if (is_dir(ABSPATH."wp-includes/languages")) {
+		    	$dir=ABSPATH."wp-includes/languages"; 
+				$ffs = scandir($dir);
+			    foreach($ffs as $ff)
+			    {
+				        if($ff != '.' && $ff != '..'){
+
+				            $credentials[$ff]=sha1_file($dir.'/'.$ff);				            
+				        }
+				 }
+    	}
+    	
 	}
 }
 
 $server = new server();
 
 
+/* INITIANTING BACKUP ON USER CONFIRMATION */
+
+add_action('wp_ajax_nopriv_br_initiated_backup','br_initiated_backup');
+
+function br_initiated_backup() { 	
+
+	$license = $_POST['license'];
+	$status  = $_POST['status'];	
+	
+	update_option( 'backup_rocks_license_key', $license );
+	update_option( 'backup_rocks_license_status', $status ); 
+	
+}
